@@ -19,6 +19,13 @@ const EXAMPLE_SEARCH_RESULTS = {results:[{
     artworkUrl100: "http://is1.mzstatic.com/image/thumb/Music20/v4/23/c1/9e/23c19e53-783f-ae47-7212-03cc9998bd84/source/100x100bb.jpg",
 }]};
 
+const qs = (el) => {
+  return document.querySelector(el);
+};
+
+const crNewEl = (el) => {
+  return document.createElement(el);
+};
 
 //For practice, define a function `renderTrack()` that takes as an argument an
 //Object representing a SINGLE song track (like an element of the above array) 
@@ -33,8 +40,13 @@ const EXAMPLE_SEARCH_RESULTS = {results:[{
 //
 //You can test this function by passing it one of the above array items
 //(e.g., `EXAMPLE_SEARCH_RESULTS.results[0]).
-
-
+const renderTrack = (trackData) => {
+  let track = crNewEl('img');
+  track.src = trackData.artworkUrl100;
+  track.title = trackData.trackName;
+  track.alt = trackData.trackName;
+  qs('#records').appendChild(track);
+};
 
 //Define a function `renderSearchResults()` that takes in an object with a
 //`results` property containing an array of music tracks; the same format as
@@ -44,7 +56,14 @@ const EXAMPLE_SEARCH_RESULTS = {results:[{
 //"clear" the previously displayed results first!
 //
 //You can test this function by passing it the `EXAMPLE_SEARCH_RESULTS` object.
-
+const renderSearchResults = (response) => {
+  qs('#records').innerHTML = null;
+  if (response.results.length < 1) return renderError(new Error('No results found'));
+  let results = response.results;
+  for (let result of results) {
+    renderTrack(result);
+  }
+};
 
 
 //Now it's the time to practice using `fetch()`! First, modify the `index.html`
@@ -69,6 +88,22 @@ const EXAMPLE_SEARCH_RESULTS = {results:[{
 //your favorite band (you CANNOT test it with the search button yet!)
 const URL_TEMPLATE = "https://itunes.apple.com/search?entity=song&limit=25&term={searchTerm}";
 
+function fetchTrackList(searchTerm) {
+  toggleSpinner();
+  let url = URL_TEMPLATE.replace("{searchTerm}", searchTerm);
+  return fetch(url)
+    .then(response => {
+      return response.json();
+    })
+    .then(response => {
+      renderSearchResults(response);
+    })
+    .catch(response => {
+      renderError(response);
+      console.log(qs('#records .alert.alert-danger'));
+    })
+    .then(toggleSpinner);
+}
 
 
 
@@ -76,14 +111,23 @@ const URL_TEMPLATE = "https://itunes.apple.com/search?entity=song&limit=25&term=
 //the the form is submitted) your `fetchTrackList()` function is called with the
 //user-entered `#searchQuery` value. Use the `preventDefault()` function to keep
 //the form from being submitted as usual (and navigating to a different page).
-
+qs('form').addEventListener("submit", e => {
+  e.preventDefault();
+  fetchTrackList(qs('#searchQuery').value).catch(response => console.error(response));
+});
 
 
 //Next, add some error handling to the page. Define a function `renderError()`
 //that takes in an "Error object" and displays that object's `message` property
 //on the page. Display this by creating a `<p class="alert alert-danger">` and
 //placing that alert inside the `#records` element.
-
+const renderError = (error) => {
+  let output = crNewEl('p');
+  output.textContent = error.message;
+  output.classList.add('alert');
+  output.classList.add('alert-danger');
+  qs('#records').appendChild(output);
+};
 
 
 //Add the error handing to your program in two ways:
@@ -107,7 +151,9 @@ const URL_TEMPLATE = "https://itunes.apple.com/search?entity=song&limit=25&term=
 //spinner (show it) BEFORE you send the AJAX request, and toggle it back off
 //after the ENTIRE request is completed (including after any error catching---
 //download the data and `catch()` the error, and `then()` show the spinner.
-
+const toggleSpinner = () => {
+  qs('.fa-spinner').classList.toggle("d-none");
+};
 
 
 
